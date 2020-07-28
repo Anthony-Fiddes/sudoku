@@ -1,30 +1,48 @@
 package main
 
 import (
-	"image/color"
 	"log"
 
 	"github.com/hajimehoshi/ebiten"
 )
 
 const (
-	width         = 630
-	height        = width
+	width  = 630
+	height = width
+	// A Sudoku board is 9x9
 	boardDiameter = 9
 )
 
 type Game struct {
-	Board [][]int
+	Board [][]Tile
 }
 
 func NewGame() *Game {
-	// A Sudoku board is 9x9
 	g := &Game{}
-	g.Board = make([][]int, boardDiameter)
-	for i := 0; i < 9; i++ {
-		g.Board[i] = make([]int, boardDiameter)
+	g.Board = make([][]Tile, boardDiameter)
+	for i := 0; i < boardDiameter; i++ {
+		g.Board[i] = make([]Tile, boardDiameter)
+		for j := range g.Board[i] {
+			g.Board[i][j] = NewTile(0)
+		}
 	}
 	return g
+}
+
+func (g *Game) DrawBoard(screen *ebiten.Image) {
+	tile := NewTile(0)
+	slide := float64(tile.Diameter - tile.BorderWidth)
+	xSlide := 0.0
+	translation := &ebiten.DrawImageOptions{}
+	for _, row := range g.Board {
+		for _, tile := range row {
+			screen.DrawImage(tile.Image(), translation)
+			translation.GeoM.Translate(slide, 0)
+			xSlide += slide
+		}
+		translation.GeoM.Translate(-xSlide, slide)
+		xSlide = 0.0
+	}
 }
 
 func (g *Game) Update(screen *ebiten.Image) error {
@@ -32,23 +50,17 @@ func (g *Game) Update(screen *ebiten.Image) error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	gray := color.Gray{100}
-	tile, _ := ebiten.NewImageFromImage(
-		ColoredTile(50, 1, gray, color.White),
-		ebiten.FilterDefault,
-	)
-	screen.DrawImage(tile, nil)
+	g.DrawBoard(screen)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	return width / 2, height / 2
+	return width - excess, height - excess
 }
 
 func main() {
 	game := NewGame()
-	ebiten.SetWindowSize(width, height)
+	ebiten.SetWindowSize(width-excess, height-excess)
 	ebiten.SetWindowTitle("Sudoku")
-	// Call ebiten.RunGame to start your game loop.
 	err := ebiten.RunGame(game)
 	if err != nil {
 		log.Fatal(err)
