@@ -1,15 +1,19 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
+	"log"
 
+	"golang.org/x/image/font"
+
+	"github.com/golang/freetype/truetype"
 	"github.com/hajimehoshi/ebiten"
+	"github.com/hajimehoshi/ebiten/examples/resources/fonts"
+	"github.com/hajimehoshi/ebiten/text"
 )
-
-// https://blog.golang.org/image-draw is a good read to understand what is
-// happenening here.
 
 // Tile represents a Sudoku tile
 type Tile struct {
@@ -26,13 +30,32 @@ const (
 	// excess space left over from overlapping tiles
 	// TODO: improve this math, as it's only working for widths/heights that are
 	// multiples of 9
-	excess = tileDiameter*boardDiameter - (tileDiameter + (tileDiameter-borderWidth)*(boardDiameter-1))
+	excess   = tileDiameter*boardDiameter - (tileDiameter + (tileDiameter-borderWidth)*(boardDiameter-1))
+	dpi      = 72
+	fontSize = 30
+	hinting  = font.HintingFull
 )
 
 var (
 	tileFillColor   = color.White
 	tileBorderColor = color.Gray{100}
+	fontColor       = color.Black
+	mplusNormalFont font.Face
 )
+
+// https://ebiten.org/examples/font.html is a great example of how to load and
+// use fonts
+func init() {
+	trueTypeFont, err := truetype.Parse(fonts.MPlus1pRegular_ttf)
+	if err != nil {
+		log.Fatal(err)
+	}
+	mplusNormalFont = truetype.NewFace(trueTypeFont, &truetype.Options{
+		Size:    fontSize,
+		DPI:     dpi,
+		Hinting: hinting,
+	})
+}
 
 // NewTile returns a Sudoku tile with default values
 func NewTile(value int) Tile {
@@ -50,6 +73,9 @@ func NewTile(value int) Tile {
 // That square has an outer border that is borderWidth pixels thick and colored
 // border. The rest of the square is colored fill, and the whole square is diameter
 // wide and tall.
+//
+// https://blog.golang.org/image-draw is a good read to understand what is
+// happenening here.
 func (t Tile) Image() *ebiten.Image {
 	borderSquare := FilledRectangle(t.Diameter, t.Diameter, t.Border)
 	innerDiameter := t.Diameter - t.BorderWidth*2
@@ -61,6 +87,12 @@ func (t Tile) Image() *ebiten.Image {
 	r := image.Rectangle{innerTopLeft, innerTopLeft.Add(ib.Size())}
 	draw.Draw(borderSquare, r, innerSquare, ib.Min, draw.Src)
 	tileImage, _ := ebiten.NewImageFromImage(borderSquare, ebiten.FilterDefault)
+	x, y := tileImage.Size()
+	number := fmt.Sprintf("%d", t.Value)
+	fontDimensions := text.MeasureString(number, mplusNormalFont)
+	// TODO: understand why centering the text with the +/- 2 constants appears
+	// to work. I had trouble figuring out the font math here.
+	text.Draw(tileImage, number, mplusNormalFont, (x-fontDimensions.X)/2+2, (y+fontSize)/2-2, fontColor)
 	return tileImage
 }
 
