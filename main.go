@@ -30,8 +30,7 @@ func NewGame() *Game {
 }
 
 func (g *Game) DrawBoard(screen *ebiten.Image) {
-	tile := NewTile(0)
-	slide := float64(tile.Diameter - tile.BorderWidth)
+	slide := float64(tileDiameter - borderWidth)
 	xSlide := 0.0
 	translation := &ebiten.DrawImageOptions{}
 	for _, row := range g.Board {

@@ -15,7 +15,9 @@ import (
 	"github.com/hajimehoshi/ebiten/text"
 )
 
-// Tile represents a Sudoku tile
+// Tile represents a Sudoku tile.
+//
+// A Value of -1 represents a blank tile
 type Tile struct {
 	Value       int
 	Diameter    int
@@ -87,12 +89,15 @@ func (t Tile) Image() *ebiten.Image {
 	r := image.Rectangle{innerTopLeft, innerTopLeft.Add(ib.Size())}
 	draw.Draw(borderSquare, r, innerSquare, ib.Min, draw.Src)
 	tileImage, _ := ebiten.NewImageFromImage(borderSquare, ebiten.FilterDefault)
-	x, y := tileImage.Size()
-	number := fmt.Sprintf("%d", t.Value)
-	fontDimensions := text.MeasureString(number, mplusNormalFont)
-	// TODO: understand why centering the text with the +/- 2 constants appears
-	// to work. I had trouble figuring out the font math here.
-	text.Draw(tileImage, number, mplusNormalFont, (x-fontDimensions.X)/2+2, (y+fontSize)/2-2, fontColor)
+	// Only render tile text for values between 0 and 9
+	if t.Value >= 0 && t.Value <= 9 {
+		x, y := tileImage.Size()
+		number := fmt.Sprintf("%d", t.Value)
+		fontDimensions := text.MeasureString(number, mplusNormalFont)
+		// TODO: understand why centering the text with the +/- 2 constants appears
+		// to work. I had trouble figuring out the font math here.
+		text.Draw(tileImage, number, mplusNormalFont, (x-fontDimensions.X)/2+2, (y+fontSize)/2-2, fontColor)
+	}
 	return tileImage
 }
 
