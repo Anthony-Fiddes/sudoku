@@ -2,9 +2,7 @@ package main
 
 import (
 	"fmt"
-	"image"
 	"image/color"
-	"image/draw"
 	"log"
 
 	"golang.org/x/image/font"
@@ -24,6 +22,7 @@ type Tile struct {
 	BorderWidth int
 	Fill        color.Color
 	Border      color.Color
+	image       *ebiten.Image
 }
 
 const (
@@ -71,41 +70,40 @@ func NewTile(value int) Tile {
 	}
 }
 
-// Image returns a tile's pictorial representation as an ebiten.Image
+// Image returns a tile's pictorial representation as an *ebiten.Image
 //
-// That square has an outer border that is borderWidth pixels thick and colored
+// That tile has an outer border that is borderWidth pixels thick and colored
 // border. The rest of the square is colored fill, and the whole square is diameter
 // wide and tall.
-//
-// https://blog.golang.org/image-draw is a good read to understand what is
-// happenening here.
-func (t Tile) Image() *ebiten.Image {
+func (t *Tile) Image() *ebiten.Image {
+	if t.image == nil {
+		t.Update()
+	}
+	return t.image
+}
+
+func (t *Tile) Update() {
 	borderSquare := FilledRectangle(t.Diameter, t.Diameter, t.Border)
 	innerDiameter := t.Diameter - t.BorderWidth*2
 	innerSquare := FilledRectangle(innerDiameter, innerDiameter, t.Fill)
-	b := borderSquare.Bounds()
-	innerTopLeft := b.Min.Add(image.Pt(t.BorderWidth, t.BorderWidth))
-	ib := innerSquare.Bounds()
-	// Convert the innerSquare's coordinate space to the borderSquare's
-	r := image.Rectangle{innerTopLeft, innerTopLeft.Add(ib.Size())}
-	draw.Draw(borderSquare, r, innerSquare, ib.Min, draw.Src)
-	tileImage, _ := ebiten.NewImageFromImage(borderSquare, ebiten.FilterDefault)
+	translation := &ebiten.DrawImageOptions{}
+	translation.GeoM.Translate(borderWidth, borderWidth)
+	borderSquare.DrawImage(innerSquare, translation)
 	// Only render tile text for values between 0 and 9
 	if t.Value >= 0 && t.Value <= 9 {
-		x, y := tileImage.Size()
+		x, y := borderSquare.Size()
 		number := fmt.Sprintf("%d", t.Value)
 		fontDimensions := text.MeasureString(number, mplusNormalFont)
 		// TODO: understand why centering the text with the +/- 2 constants appears
 		// to work. I had trouble figuring out the font math here.
-		text.Draw(tileImage, number, mplusNormalFont, (x-fontDimensions.X)/2+2, (y+fontSize)/2-2, fontColor)
+		text.Draw(borderSquare, number, mplusNormalFont, (x-fontDimensions.X)/2+2, (y+fontSize)/2-2, fontColor)
 	}
-	return tileImage
+	t.image = borderSquare
 }
 
-// FilledRectangle returns a draw.Image that is filled with the given color
-func FilledRectangle(width, height int, fill color.Color) draw.Image {
-	outer := image.Rect(0, 0, width, height)
-	rectangle := image.NewRGBA(outer)
-	draw.Draw(rectangle, rectangle.Bounds(), image.NewUniform(fill), rectangle.Bounds().Min, draw.Src)
+// FilledRectangle returns an *ebiten.Image that is filled with the given color
+func FilledRectangle(width, height int, fill color.Color) *ebiten.Image {
+	rectangle, _ := ebiten.NewImage(width, height, ebiten.FilterDefault)
+	rectangle.Fill(fill)
 	return rectangle
 }

@@ -67,6 +67,7 @@ func (g *Game) DrawBoard(screen *ebiten.Image) {
 	if g.active.X >= 0 {
 		tile := g.Tile(g.active.X, g.active.Y)
 		tile.Border = activeBorderColor
+		tile.Update()
 		g.DrawTile(g.active.X, g.active.Y, screen)
 	}
 }
