@@ -49,7 +49,7 @@ func (g *Game) DrawTile(x, y int, screen *ebiten.Image) {
 		ySlide += slide
 	}
 	translation.GeoM.Translate(xSlide, ySlide)
-	screen.DrawImage(tile.Image(), translation)
+	screen.DrawImage(tile.Cache(), translation)
 }
 
 func (g *Game) ResetTile(x, y int) {
@@ -64,17 +64,17 @@ func (g *Game) DrawBoard(screen *ebiten.Image) {
 			g.DrawTile(i, j, screen)
 		}
 	}
-	if g.active.X >= 0 {
+	if g.HasActiveTile() {
 		tile := g.Tile(g.active.X, g.active.Y)
 		tile.Border = activeBorderColor
-		tile.Update()
+		tile.Draw()
 		g.DrawTile(g.active.X, g.active.Y, screen)
 	}
 }
 
 func (g *Game) Update(screen *ebiten.Image) error {
 	cursorX, cursorY := ebiten.CursorPosition()
-	if In(cursorX, 0, width) && In(cursorY, 0, height) {
+	if in(cursorX, 0, width) && in(cursorY, 0, height) {
 		if g.HasActiveTile() {
 			g.ResetTile(g.active.X, g.active.Y)
 		}
@@ -103,7 +103,7 @@ func (g *Game) HasActiveTile() bool {
 	return true
 }
 
-func In(x, min, max int) bool {
+func in(x, min, max int) bool {
 	if x >= min && x <= max {
 		return true
 	}

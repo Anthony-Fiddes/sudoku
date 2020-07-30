@@ -70,19 +70,19 @@ func NewTile(value int) Tile {
 	}
 }
 
-// Image returns a tile's pictorial representation as an *ebiten.Image
+// Cache returns a tile's cache of its pictorial representation as an *ebiten.Image
 //
 // That tile has an outer border that is borderWidth pixels thick and colored
 // border. The rest of the square is colored fill, and the whole square is diameter
 // wide and tall.
-func (t *Tile) Image() *ebiten.Image {
+func (t *Tile) Cache() *ebiten.Image {
 	if t.image == nil {
-		t.Update()
+		t.Draw()
 	}
 	return t.image
 }
 
-func (t *Tile) Update() {
+func (t *Tile) Draw() *ebiten.Image {
 	borderSquare := FilledRectangle(t.Diameter, t.Diameter, t.Border)
 	innerDiameter := t.Diameter - t.BorderWidth*2
 	innerSquare := FilledRectangle(innerDiameter, innerDiameter, t.Fill)
@@ -99,6 +99,7 @@ func (t *Tile) Update() {
 		text.Draw(borderSquare, number, mplusNormalFont, (x-fontDimensions.X)/2+2, (y+fontSize)/2-2, fontColor)
 	}
 	t.image = borderSquare
+	return t.image
 }
 
 // FilledRectangle returns an *ebiten.Image that is filled with the given color
