@@ -39,10 +39,11 @@ const (
 )
 
 var (
-	tileFillColor   = color.White
-	tileBorderColor = color.Gray{100}
-	fontColor       = color.Black
-	mplusNormalFont font.Face
+	tileFillColor     = color.White
+	tileBorderColor   = color.Gray{100}
+	activeBorderColor = color.RGBA{R: 54, G: 123, B: 235, A: 255}
+	fontColor         = color.Black
+	mplusNormalFont   font.Face
 )
 
 // https://ebiten.org/examples/font.html is a great example of how to load and
