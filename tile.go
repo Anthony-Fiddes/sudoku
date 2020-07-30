@@ -28,7 +28,7 @@ type Tile struct {
 const (
 	borderWidth  = 2
 	tileDiameter = width / boardDiameter
-	// excess space left over from overlapping tiles
+	// excess is space left over from overlapping tiles
 	// TODO: improve this math, as it's only working for widths/heights that are
 	// multiples of 9
 	excess   = tileDiameter*boardDiameter - (tileDiameter + (tileDiameter-borderWidth)*(boardDiameter-1))
@@ -43,6 +43,7 @@ var (
 	activeBorderColor = color.RGBA{R: 54, G: 123, B: 235, A: 255}
 	fontColor         = color.Black
 	mplusNormalFont   font.Face
+	// TODO: Add a default tile to make drawing easier, or give in and add sprites
 )
 
 // https://ebiten.org/examples/font.html is a great example of how to load and
@@ -61,13 +62,15 @@ func init() {
 
 // NewTile returns a Sudoku tile with default values
 func NewTile(value int) Tile {
-	return Tile{
+	tile := Tile{
 		Value:       value,
 		Diameter:    tileDiameter,
 		BorderWidth: borderWidth,
 		Fill:        tileFillColor,
 		Border:      tileBorderColor,
 	}
+	tile.Draw()
+	return tile
 }
 
 // Cache returns a tile's cache of its pictorial representation as an *ebiten.Image
