@@ -49,7 +49,7 @@ func (g *Game) DrawTile(x, y int, screen *ebiten.Image) {
 		ySlide += slide
 	}
 	translation.GeoM.Translate(xSlide, ySlide)
-	screen.DrawImage(tile.Cache(), translation)
+	screen.DrawImage(tile.Draw(), translation)
 }
 
 func (g *Game) ResetTile(x, y int) {
@@ -103,8 +103,9 @@ func (g *Game) HasActiveTile() bool {
 	return true
 }
 
+// Checks if x is in the range from min to max, exclusive
 func in(x, min, max int) bool {
-	if x >= min && x <= max {
+	if x > min && x < max {
 		return true
 	}
 	return false

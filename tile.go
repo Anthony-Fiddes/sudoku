@@ -23,6 +23,7 @@ type Tile struct {
 	Fill        color.Color
 	Border      color.Color
 	image       *ebiten.Image
+	cache       *spriteCache
 }
 
 const (
@@ -43,7 +44,7 @@ var (
 	activeBorderColor = color.RGBA{R: 54, G: 123, B: 235, A: 255}
 	fontColor         = color.Black
 	mplusNormalFont   font.Face
-	// TODO: Add a default tile to make drawing easier, or give in and add sprites
+	tileImageCache    *spriteCache
 )
 
 // https://ebiten.org/examples/font.html is a great example of how to load and
@@ -58,6 +59,7 @@ func init() {
 		DPI:     dpi,
 		Hinting: hinting,
 	})
+	tileImageCache = &spriteCache{cache: make(map[string]*ebiten.Image, 18)}
 }
 
 // NewTile returns a Sudoku tile with default values
@@ -68,24 +70,27 @@ func NewTile(value int) Tile {
 		BorderWidth: borderWidth,
 		Fill:        tileFillColor,
 		Border:      tileBorderColor,
+		cache:       tileImageCache,
 	}
 	tile.Draw()
 	return tile
 }
 
-// Cache returns a tile's cache of its pictorial representation as an *ebiten.Image
+// Draw returns a tile's pictorial representation as an *ebiten.Image
 //
 // That tile has an outer border that is borderWidth pixels thick and colored
 // border. The rest of the square is colored fill, and the whole square is diameter
 // wide and tall.
-func (t *Tile) Cache() *ebiten.Image {
-	if t.image == nil {
-		t.Draw()
-	}
-	return t.image
-}
-
+//
+// Every time a unique tile is drawn, it is cached using a spriteCache. By
+// hashing all of the information needed to draw a tile's image, reconstructing
+// the tile can be easily avoided.
 func (t *Tile) Draw() *ebiten.Image {
+	cachedImage, ok := t.cache.Get(t)
+	if ok {
+		t.image = cachedImage
+		return cachedImage
+	}
 	borderSquare := FilledRectangle(t.Diameter, t.Diameter, t.Border)
 	innerDiameter := t.Diameter - t.BorderWidth*2
 	innerSquare := FilledRectangle(innerDiameter, innerDiameter, t.Fill)
@@ -101,8 +106,32 @@ func (t *Tile) Draw() *ebiten.Image {
 		// to work. I had trouble figuring out the font math here.
 		text.Draw(borderSquare, number, mplusNormalFont, (x-fontDimensions.X)/2+2, (y+fontSize)/2-2, fontColor)
 	}
-	t.image = borderSquare
-	return t.image
+	t.cache.Add(t, borderSquare)
+	return borderSquare
+}
+
+func (t *Tile) hash() string {
+	result := "%v%v%v%v%v"
+	return fmt.Sprintf(result, t.Value, t.Border, t.BorderWidth, t.Diameter, t.Fill)
+}
+
+type spriteCache struct {
+	cache map[string]*ebiten.Image
+}
+
+type hashableSprite interface {
+	hash() string
+}
+
+func (sc *spriteCache) Add(hs hashableSprite, image *ebiten.Image) {
+	if sc.cache != nil {
+		sc.cache[hs.hash()] = image
+	}
+}
+
+func (sc *spriteCache) Get(hs hashableSprite) (*ebiten.Image, bool) {
+	image, ok := sc.cache[hs.hash()]
+	return image, ok
 }
 
 // FilledRectangle returns an *ebiten.Image that is filled with the given color
