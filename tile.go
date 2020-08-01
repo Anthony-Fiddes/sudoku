@@ -22,7 +22,6 @@ type Tile struct {
 	BorderWidth int
 	Fill        color.Color
 	Border      color.Color
-	image       *ebiten.Image
 	cache       *spriteCache
 }
 
@@ -88,7 +87,6 @@ func NewTile(value int) Tile {
 func (t *Tile) Draw() *ebiten.Image {
 	cachedImage, ok := t.cache.Get(t)
 	if ok {
-		t.image = cachedImage
 		return cachedImage
 	}
 	borderSquare := FilledRectangle(t.Diameter, t.Diameter, t.Border)
