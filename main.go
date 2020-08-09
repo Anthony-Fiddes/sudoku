@@ -13,32 +13,27 @@ const (
 	height = width
 	// A Sudoku board is 9x9
 	boardDiameter = 9
+	puzzlePath    = "./puzzle.txt"
 )
 
 type Game struct {
-	Board  [][]Tile
+	Board  Puzzle
 	active image.Point
 }
 
 func NewGame() *Game {
 	g := &Game{}
-	g.Board = make([][]Tile, boardDiameter)
-	for i := 0; i < boardDiameter; i++ {
-		g.Board[i] = make([]Tile, boardDiameter)
-		for j := range g.Board[i] {
-			g.Board[i][j] = NewTile(0)
-		}
+	var err error
+	g.Board, err = LoadPuzzle(puzzlePath)
+	if err != nil {
+		log.Fatalf("Error initializing board: %v", err)
 	}
 	g.active = image.Pt(-1, -1)
 	return g
 }
 
-func (g *Game) Tile(x, y int) *Tile {
-	return &g.Board[y][x]
-}
-
 func (g *Game) DrawTile(x, y int, screen *ebiten.Image) {
-	tile := g.Tile(x, y)
+	tile := g.Board.Tile(x, y)
 	slide := float64(tileDiameter - borderWidth)
 	translation := &ebiten.DrawImageOptions{}
 	xSlide, ySlide := 0.0, 0.0
@@ -53,7 +48,7 @@ func (g *Game) DrawTile(x, y int, screen *ebiten.Image) {
 }
 
 func (g *Game) ResetTile(x, y int) {
-	tile := g.Tile(x, y)
+	tile := g.Board.Tile(x, y)
 	defaultTile := NewTile(tile.Value)
 	*tile = defaultTile
 }
@@ -65,7 +60,7 @@ func (g *Game) DrawBoard(screen *ebiten.Image) {
 		}
 	}
 	if g.HasActiveTile() {
-		tile := g.Tile(g.active.X, g.active.Y)
+		tile := g.Board.Tile(g.active.X, g.active.Y)
 		tile.Border = activeBorderColor
 		tile.Draw()
 		g.DrawTile(g.active.X, g.active.Y, screen)
