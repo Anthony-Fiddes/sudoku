@@ -29,6 +29,93 @@ func (p Puzzle) SetTile(x, y int, t *Tile) {
 	p[y][x] = *t
 }
 
+func (p Puzzle) value(x, y int) int {
+	return p[y][x].Value
+}
+
+func (p Puzzle) setValue(x, y, val int) {
+	p[y][x].Value = val
+}
+
+func (p Puzzle) IsValidRow(y int) bool {
+	return p.isValidRange(0, y, boardDiameter-1, y)
+}
+
+func (p Puzzle) IsValidCol(x int) bool {
+	return p.isValidRange(x, 0, x, boardDiameter-1)
+}
+
+func (p Puzzle) IsValidSquare(x, y int) bool {
+	topLeftX := (x / squareDiameter) * squareDiameter
+	topLeftY := (y / squareDiameter) * squareDiameter
+	botRightX := topLeftX + squareDiameter - 1
+	botRightY := topLeftY + squareDiameter - 1
+	return p.isValidRange(topLeftX, topLeftY, botRightX, botRightY)
+}
+
+func (p Puzzle) IsValid(x, y int) bool {
+	return p.IsValidSquare(x, y) && p.IsValidRow(y) && p.IsValidCol(x)
+}
+
+func (p Puzzle) isValidRange(minX, minY, maxX, maxY int) bool {
+	existingDigits := make(map[int]struct{})
+	for x := minX; x <= maxX; x++ {
+		for y := minY; y <= maxY; y++ {
+			value := p.Tile(x, y).Value
+			if value == blank {
+				continue
+			}
+			_, present := existingDigits[value]
+			if present {
+				return false
+			}
+			existingDigits[value] = struct{}{}
+		}
+	}
+	return true
+}
+
+func (p Puzzle) solve() bool {
+	for x := 0; x < boardDiameter; x++ {
+		for y := 0; y < boardDiameter; y++ {
+			// Skip tiles with assigned values
+			if p.value(x, y) != blank {
+				continue
+			}
+			// Try 1-9 in an open tile
+			for i := 1; i <= boardDiameter; i++ {
+				p.setValue(x, y, i)
+				if p.IsValid(x, y) {
+					// If we've reached the max x and y, we have found a
+					// solution (this assumes a rectangular puzzle)
+					if x == len(p[0])-1 && y == len(p)-1 {
+						return true
+					}
+					// For valid guesses, attempt to search further
+					if p.solve() {
+						return true
+					}
+				}
+				p.setValue(x, y, blank)
+			}
+			// If the values 1 to 9 are tried with no success, the puzzle is invalid
+			return false
+		}
+	}
+	return false
+}
+
+func (p Puzzle) String() string {
+	var result string
+	for _, row := range p {
+		for _, tile := range row {
+			result += fmt.Sprintf("%d ", tile.Value)
+		}
+		result += "\n"
+	}
+	return result
+}
+
 // LoadPuzzle reads a QQWing formatted Sudoku board from a text file into a
 // Puzzle value in memory
 func LoadPuzzle(path string) (Puzzle, error) {
@@ -52,7 +139,7 @@ func LoadPuzzle(path string) (Puzzle, error) {
 			}
 			var value int
 			if char == '.' {
-				value = -1
+				value = blank
 			} else if char < '0' || char > '9' {
 				continue
 			} else {

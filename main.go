@@ -13,7 +13,9 @@ const (
 	height = width
 	// A Sudoku board is 9x9
 	boardDiameter = 9
-	puzzlePath    = "./puzzle.txt"
+	// A square in a sudoku board is 3x3
+	squareDiameter = 3
+	puzzlePath     = "./puzzle.txt"
 )
 
 type Game struct {

@@ -14,8 +14,6 @@ import (
 )
 
 // Tile represents a Sudoku tile.
-//
-// A Value of -1 represents a blank tile
 type Tile struct {
 	Value       int
 	Diameter    int
@@ -35,6 +33,8 @@ const (
 	dpi      = 72
 	fontSize = 30
 	hinting  = font.HintingFull
+	// A value of 0 represents a blank tile
+	blank = 0
 )
 
 var (
@@ -96,7 +96,7 @@ func (t *Tile) Draw() *ebiten.Image {
 	translation.GeoM.Translate(borderWidth, borderWidth)
 	borderSquare.DrawImage(innerSquare, translation)
 	// Only render tile text for values between 0 and 9
-	if t.Value >= 0 && t.Value <= 9 {
+	if t.Value >= 1 && t.Value <= 9 {
 		x, y := borderSquare.Size()
 		number := fmt.Sprintf("%d", t.Value)
 		fontDimensions := text.MeasureString(number, mplusNormalFont)
