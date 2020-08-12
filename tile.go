@@ -122,7 +122,7 @@ type hashableSprite interface {
 }
 
 func (sc *spriteCache) Add(hs hashableSprite, image *ebiten.Image) {
-	if sc.cache != nil {
+	if sc != nil && sc.cache != nil {
 		sc.cache[hs.hash()] = image
 	}
 }
