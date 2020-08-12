@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"log"
+	"time"
 
 	"github.com/hajimehoshi/ebiten"
 )
@@ -16,11 +17,13 @@ const (
 	// A square in a sudoku board is 3x3
 	squareDiameter = 3
 	puzzlePath     = "./puzzle.txt"
+	stepTime       = time.Millisecond
 )
 
 type Game struct {
-	Board  Puzzle
-	active image.Point
+	Board       Puzzle
+	active      image.Point
+	solveCalled bool
 }
 
 func NewGame() *Game {
@@ -34,7 +37,7 @@ func NewGame() *Game {
 	return g
 }
 
-func (g *Game) DrawTile(x, y int, screen *ebiten.Image) {
+func (g *Game) drawTile(x, y int, screen *ebiten.Image) {
 	tile := g.Board.Tile(x, y)
 	slide := float64(tileDiameter - borderWidth)
 	translation := &ebiten.DrawImageOptions{}
@@ -49,45 +52,57 @@ func (g *Game) DrawTile(x, y int, screen *ebiten.Image) {
 	screen.DrawImage(tile.Draw(), translation)
 }
 
-func (g *Game) ResetTile(x, y int) {
+func (g *Game) resetTile(x, y int) {
 	tile := g.Board.Tile(x, y)
 	defaultTile := NewTile(tile.Value)
 	*tile = defaultTile
 }
 
-func (g *Game) DrawBoard(screen *ebiten.Image) {
+func (g *Game) drawBoard(screen *ebiten.Image) {
 	for i := 0; i < boardDiameter; i++ {
 		for j := 0; j < boardDiameter; j++ {
-			g.DrawTile(i, j, screen)
+			g.drawTile(i, j, screen)
 		}
 	}
 	if g.HasActiveTile() {
 		tile := g.Board.Tile(g.active.X, g.active.Y)
 		tile.Border = activeBorderColor
 		tile.Draw()
-		g.DrawTile(g.active.X, g.active.Y, screen)
+		g.drawTile(g.active.X, g.active.Y, screen)
 	}
 }
 
 func (g *Game) Update(screen *ebiten.Image) error {
-	cursorX, cursorY := ebiten.CursorPosition()
-	if in(cursorX, 0, width) && in(cursorY, 0, height) {
-		if g.HasActiveTile() {
-			g.ResetTile(g.active.X, g.active.Y)
-		}
-		x, y := cursorX/tileDiameter, cursorY/tileDiameter
-		g.active = image.Pt(x, y)
+	g.updateActiveTile()
+	if ebiten.IsKeyPressed(ebiten.KeySpace) && !g.solveCalled {
+		g.solveCalled = true
+		go g.Board.blockingSolve(stepTime)
 	}
 	return nil
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	g.DrawBoard(screen)
+	g.drawBoard(screen)
 	fmt.Printf("FPS: %v; TPS: %v\n", ebiten.CurrentFPS(), ebiten.CurrentTPS())
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
 	return width - excess, height - excess
+}
+
+func (g *Game) updateActiveTile() {
+	cursorX, cursorY := ebiten.CursorPosition()
+	if g.HasActiveTile() {
+		g.resetTile(g.active.X, g.active.Y)
+	}
+	if in(cursorX, 0, width) && in(cursorY, 0, height) {
+		// Set active tile if the cursor is inside the window
+		x, y := cursorX/tileDiameter, cursorY/tileDiameter
+		g.active = image.Pt(x, y)
+	} else {
+		// Unset active tile
+		g.active = image.Pt(-1, -1)
+	}
 }
 
 // HasActiveTile returns true when the board has an active tile selected.
@@ -111,7 +126,7 @@ func in(x, min, max int) bool {
 func main() {
 	game := NewGame()
 	ebiten.SetWindowSize(width-excess, height-excess)
-	ebiten.SetWindowTitle("Sudoku")
+	ebiten.SetWindowTitle("Sudoku - Press space to solve.")
 	err := ebiten.RunGame(game)
 	if err != nil {
 		log.Fatal(err)
