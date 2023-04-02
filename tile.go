@@ -99,10 +99,10 @@ func (t *Tile) Draw() *ebiten.Image {
 	if t.Value >= 1 && t.Value <= 9 {
 		x, y := borderSquare.Size()
 		number := fmt.Sprintf("%d", t.Value)
-		fontDimensions := text.MeasureString(number, mplusNormalFont)
+		fontDimensions := text.BoundString(mplusNormalFont, number)
 		// TODO: understand why centering the text with the +/- 2 constants appears
 		// to work. I had trouble figuring out the font math here.
-		text.Draw(borderSquare, number, mplusNormalFont, (x-fontDimensions.X)/2+2, (y+fontSize)/2-2, fontColor)
+		text.Draw(borderSquare, number, mplusNormalFont, (x-fontDimensions.Max.X)/2+2, (y+fontSize)/2-2, fontColor)
 	}
 	t.cache.Add(t, borderSquare)
 	return borderSquare
